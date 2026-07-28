@@ -1,55 +1,67 @@
-# Force ARM & Takeoff via MAVLink
+# Contrôle des commandes ARM, DISARM et TAKEOFF via MAVLink
 
 ## Description
 
-Ce script se connecte à **ArduPilot** via **MAVLink**, place le drone en mode **GUIDED**, effectue un **ARM forcé**, puis envoie une commande de **décollage automatique** à une altitude de **30 mètres**.
+Ces deux scripts illustrent l'utilisation du protocole **MAVLink** pour envoyer des commandes de contrôle à un véhicule **ArduPilot** dans un environnement **SITL (Software In The Loop)**.
 
-Il permet d'illustrer comment un client MAVLink peut contrôler un véhicule à distance à l'aide de commandes standard.
+Le premier script réalise un **ARM forcé**, place le drone en mode **GUIDED**, puis lui envoie une commande de **décollage automatique**. Le second effectue un **DISARM forcé**, démontrant qu'un client MAVLink peut également ordonner l'arrêt des moteurs.
+
+Ces exemples permettent de comprendre le fonctionnement des commandes critiques transportées par le message **COMMAND_LONG**.
 
 ---
 
 # Fonctionnement
 
-Le script réalise les opérations suivantes :
+Les scripts suivent les étapes suivantes :
 
 1. Connexion au véhicule via MAVLink.
-2. Attente du message Heartbeat.
-3. Passage en mode **GUIDED**.
-4. Envoi d'un ARM forcé.
-5. Attente de quelques secondes.
-6. Envoi d'une commande de décollage automatique.
+2. Attente du message **Heartbeat**.
+3. Identification du système cible.
+4. Envoi d'une ou plusieurs commandes de contrôle.
+
+Selon le script exécuté :
+
+- **Force ARM & Takeoff**
+  - Passage en mode **GUIDED**.
+  - ARM forcé.
+  - Décollage automatique à 30 mètres.
+
+- **Force DISARM**
+  - Désarmement forcé du véhicule.
 
 ---
 
-# Structure du code
+# Structure des scripts
 
-## Connexion
+## Connexion MAVLink
 
 ```python
 master = mavutil.mavlink_connection("udp:127.0.0.1:14550")
 ```
 
-Le script ouvre une connexion UDP vers ArduPilot.
+Les deux scripts ouvrent une connexion UDP vers ArduPilot sur le port **14550**.
 
 ---
 
-## Heartbeat
+## Attente du Heartbeat
 
 ```python
 master.wait_heartbeat()
 ```
 
-Le programme attend que le pilote automatique confirme sa présence.
+Le programme attend la réception d'un message **Heartbeat**, confirmant que la communication avec le pilote automatique est établie.
 
 ---
 
-## Changement de mode
+# Script 1 : Force ARM & Takeoff
+
+## Passage en mode GUIDED
 
 ```python
 master.set_mode("GUIDED")
 ```
 
-Le drone est placé en mode **GUIDED**, ce qui autorise l'exécution de commandes de navigation envoyées par MAVLink.
+Le drone est placé en mode **GUIDED**, ce qui autorise le contrôle du véhicule par des commandes MAVLink.
 
 ---
 
@@ -70,9 +82,9 @@ Le code **21196** permet de contourner certaines vérifications de sécurité r�
 
 ---
 
-## Décollage
+## Décollage automatique
 
-Le script envoie ensuite une commande :
+Une fois le drone armé, le script envoie :
 
 ```
 MAV_CMD_NAV_TAKEOFF
@@ -84,11 +96,11 @@ Le dernier paramètre fixe l'altitude cible :
 30 mètres
 ```
 
-Le pilote automatique démarre alors une procédure de décollage jusqu'à atteindre cette altitude.
+Le pilote automatique lance alors la procédure de décollage.
 
 ---
 
-# Exemple d'exécution
+## Exemple d'exécution
 
 ```bash
 python3 force_arm_takeoff.py
@@ -104,100 +116,26 @@ Sortie :
 
 ---
 
-# Messages MAVLink utilisés
+# Script 2 : Force DISARM
 
-| Message | Rôle |
-|---------|------|
-| `HEARTBEAT` | Vérifie la présence du véhicule |
-| `COMMAND_LONG` | Transporte les commandes envoyées au pilote automatique |
-| `MAV_CMD_COMPONENT_ARM_DISARM` | Arme ou désarme le drone |
-| `MAV_CMD_NAV_TAKEOFF` | Lance une procédure de décollage automatique |
+## Désarmement forcé
 
----
-
-# Objectif pédagogique
-
-Ce script permet de comprendre :
-
-- l'établissement d'une connexion MAVLink ;
-- le changement de mode de vol ;
-- l'envoi de commandes critiques (`ARM`, `TAKEOFF`) ;
-- le fonctionnement du message `COMMAND_LONG` dans ArduPilot ;
-- les conséquences potentielles d'une absence de contrôle d'accès aux commandes MAVLink dans un environnement de simulation.
-
-# Force Disarm via MAVLink
-
-## Description
-
-Ce script établit une connexion avec un véhicule **ArduPilot** via le protocole **MAVLink**, puis envoie une commande de **désarmement forcé (Force DISARM)**.
-
-Il illustre comment un client MAVLink peut transmettre une commande critique au pilote automatique à l'aide du message `COMMAND_LONG`.
-
-
----
-
-# Fonctionnement
-
-Le script effectue les étapes suivantes :
-
-1. Connexion au véhicule via MAVLink.
-2. Attente du message **Heartbeat**.
-3. Identification du système cible.
-4. Envoi d'une commande `MAV_CMD_COMPONENT_ARM_DISARM`.
-5. Désarmement forcé du drone.
-
----
-
-# Explication du code
-
-## Connexion MAVLink
-
-```python
-master = mavutil.mavlink_connection("udp:127.0.0.1:14550")
-```
-
-Établit une connexion UDP avec ArduPilot sur le port **14550**.
-
----
-
-## Attente du Heartbeat
-
-```python
-master.wait_heartbeat()
-```
-
-Le script attend qu'ArduPilot envoie un message **Heartbeat**, indiquant que la communication est établie.
-
----
-
-## Commande de désarmement
-
-```python
-master.mav.command_long_send(...)
-```
-
-Cette fonction envoie un message MAVLink de type :
-
-```
-COMMAND_LONG
-```
-
-contenant la commande :
+Le second script envoie également une commande :
 
 ```
 MAV_CMD_COMPONENT_ARM_DISARM
 ```
 
-avec les paramètres :
+mais avec les paramètres :
 
-- **param1 = 0** → désarmement (DISARM)
-- **param2 = 21196** → code autorisant le désarmement forcé
+- **param1 = 0** → DISARM
+- **param2 = 21196** → désarmement forcé
 
-Le code **21196** permet d'ignorer certaines vérifications de sécurité normalement effectuées par le pilote automatique.
+Le pilote automatique reçoit alors une demande de désarmement, même si certaines conditions de sécurité ne sont pas remplies.
 
 ---
 
-# Exemple d'exécution
+## Exemple d'exécution
 
 ```bash
 python3 force_disarm.py
@@ -212,11 +150,37 @@ Sortie :
 
 ---
 
+# Messages MAVLink utilisés
+
+| Message | Rôle |
+|---------|------|
+| `HEARTBEAT` | Vérifie la présence du véhicule |
+| `COMMAND_LONG` | Transporte les commandes MAVLink |
+| `MAV_CMD_COMPONENT_ARM_DISARM` | Arme ou désarme le drone |
+| `MAV_CMD_NAV_TAKEOFF` | Lance une procédure de décollage automatique |
+
+---
+
+# Différences entre les deux scripts
+
+| Fonction | Force ARM & Takeoff | Force DISARM |
+|----------|----------------------|--------------|
+| Connexion MAVLink | ✓ | ✓ |
+| Attente du Heartbeat | ✓ | ✓ |
+| Passage en mode GUIDED | ✓ | ✗ |
+| ARM forcé | ✓ | ✗ |
+| TAKEOFF | ✓ | ✗ |
+| DISARM forcé | ✗ | ✓ |
+
+---
+
 # Objectif pédagogique
 
-Ce script montre comment :
+Ces deux scripts permettent d'étudier :
 
-- établir une connexion MAVLink ;
-- envoyer une commande `COMMAND_LONG` ;
-- utiliser la commande `MAV_CMD_COMPONENT_ARM_DISARM` ;
-- comprendre les risques liés aux commandes critiques si elles ne sont pas protégées.
+- l'établissement d'une connexion avec ArduPilot via MAVLink ;
+- l'utilisation du message `COMMAND_LONG` pour transmettre des commandes critiques ;
+- les mécanismes d'armement (`ARM`) et de désarmement (`DISARM`) du véhicule ;
+- le déclenchement d'un décollage automatique (`TAKEOFF`) ;
+- le rôle du mode **GUIDED** dans l'exécution de commandes de navigation ;
+- les implications de sécurité liées à l'acceptation de commandes MAVLink non authentifiées dans un environnement de simulation.
