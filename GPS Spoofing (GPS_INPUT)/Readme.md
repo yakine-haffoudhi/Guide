@@ -8,13 +8,7 @@ Le script se connecte à ArduPilot SITL sur le port UDP `14552` (dédié, pour l
 
 Comme SITL accepte ce flux GPS externe comme source de vérité, le drone "croit" suivre ce cercle même si sa position réelle (physique/simulée) est différente — c'est une attaque de type **GPS spoofing par injection**.
 
-## Prérequis
-
-- Python 3
-- `pymavlink` installé : `pip3 install pymavlink`
-- ArduPilot SITL démarré et exposant un flux MAVLink en sortie vers le port `14552` (ex. `output add udp:127.0.0.1:14552` dans MAVProxy)
-
-## Paramètres (à modifier dans le script)
+## Paramètres 
 
 | Variable | Description | Valeur par défaut |
 |---|---|---|
@@ -34,5 +28,3 @@ Le script :
 1. Attend un heartbeat MAVLink de SITL sur le port `14552` (timeout 30 s)
 2. Une fois connecté, envoie en continu des positions GPS calculées point par point sur le cercle
 3. Affiche à chaque itération l'angle courant et la position injectée (`lat`, `lon`)
-
-## Sortie console
